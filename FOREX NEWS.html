@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Forex News Impact</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap');
+
+  :root {
+    --bg:       #080c10;
+    --surface:  #0e1420;
+    --border:   #1c2535;
+    --accent:   #00e5ff;
+    --bull:     #00e676;
+    --bear:     #ff3d57;
+    --neutral:  #ffb300;
+    --text:     #e0e8f0;
+    --muted:    #5a6a80;
+    --card-bg:  #111827;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    padding-bottom: 40px;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background: linear-gradient(135deg, #0a0f1a 0%, #0e1c2e 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 20px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(12px);
+  }
+  .header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .logo-icon {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, var(--accent), #0080ff);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .logo-text {
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+  .logo-text span { color: var(--accent); }
+  .status-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 8px;
+  }
+  .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--bull);
+    animation: pulse 2s infinite;
+  }
+  .dot.loading { background: var(--neutral); animation: spin-dot 1s linear infinite; }
+  .dot.error   { background: var(--bear); animation: none; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(1.3)} }
+  @keyframes spin-dot { 0%{opacity:1} 50%{opacity:.2} 100%{opacity:1} }
+
+  /* ── UPDATE BUTTON ── */
+  .btn-update {
+    background: linear-gradient(135deg, var(--accent), #0080ff);
+    border: none;
+    border-radius: 12px;
+    color: #000;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    padding: 10px 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    transition: all .2s;
+    white-space: nowrap;
+  }
+  .btn-update:active { transform: scale(.95); opacity: .85; }
+  .btn-update:disabled { opacity: .5; cursor: not-allowed; }
+  .btn-update svg { transition: transform .6s; }
+  .btn-update.spinning svg { animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── LEGEND ── */
+  .legend {
+    display: flex;
+    gap: 14px;
+    padding: 10px 20px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+  .legend-item {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 11px; color: var(--muted);
+  }
+  .legend-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+  }
+
+  /* ── FILTER TABS ── */
+  .filter-row {
+    display: flex;
+    gap: 8px;
+    padding: 14px 20px 10px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .filter-row::-webkit-scrollbar { display: none; }
+  .filter-btn {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--muted);
+    border-radius: 20px;
+    padding: 6px 16px;
+    font-size: 12px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all .2s;
+  }
+  .filter-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #000;
+  }
+
+  /* ── MAIN CONTENT ── */
+  .main { padding: 0 16px; }
+
+  .section-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 16px 4px 10px;
+  }
+
+  /* ── NEWS CARD ── */
+  .news-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    margin-bottom: 14px;
+    overflow: hidden;
+    animation: fadeUp .4s ease both;
+    transition: border-color .2s;
+  }
+  .news-card:active { border-color: var(--accent); }
+  @keyframes fadeUp {
+    from { opacity:0; transform:translateY(16px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+
+  .card-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px 16px 0;
+  }
+  .currency-badge {
+    background: linear-gradient(135deg, #1a2535, #0e1a28);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 12px;
+    text-align: center;
+    min-width: 56px;
+    flex-shrink: 0;
+  }
+  .currency-badge .ccy {
+    font-family: 'Space Mono', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--accent);
+    display: block;
+  }
+  .currency-badge .flag {
+    font-size: 18px;
+    display: block;
+    margin-bottom: 2px;
+  }
+
+  .card-meta { flex: 1; min-width: 0; }
+  .card-source {
+    font-size: 10px;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    margin-bottom: 4px;
+  }
+  .card-title {
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.4;
+    color: var(--text);
+  }
+
+  .card-body { padding: 12px 16px 16px; }
+
+  /* Penjelasan sederhana */
+  .simple-explain {
+    background: rgba(0,229,255,.05);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    padding: 10px 12px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #b0c4d8;
+    margin-bottom: 12px;
+  }
+
+  /* Impact grid */
+  .impact-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .impact-item {
+    border-radius: 10px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .impact-item.bull { background: rgba(0,230,118,.08); border: 1px solid rgba(0,230,118,.2); }
+  .impact-item.bear { background: rgba(255,61,87,.08);  border: 1px solid rgba(255,61,87,.2); }
+  .impact-item.neut { background: rgba(255,179,0,.08);  border: 1px solid rgba(255,179,0,.2); }
+
+  .impact-pair {
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .impact-item.bull .impact-pair { color: var(--bull); }
+  .impact-item.bear .impact-pair { color: var(--bear); }
+  .impact-item.neut .impact-pair { color: var(--neutral); }
+
+  .impact-label {
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .impact-item.bull .impact-label { color: var(--bull); }
+  .impact-item.bear .impact-label { color: var(--bear); }
+  .impact-item.neut .impact-label { color: var(--neutral); }
+
+  .impact-reason {
+    font-size: 10px;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+
+  /* Strength badge */
+  .card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .strength-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .strength-bars {
+    display: flex;
+    gap: 3px;
+    align-items: flex-end;
+  }
+  .bar {
+    width: 5px;
+    border-radius: 2px;
+    transition: background .3s;
+  }
+  .bar:nth-child(1) { height: 8px; }
+  .bar:nth-child(2) { height: 12px; }
+  .bar:nth-child(3) { height: 16px; }
+  .bar.active.bull { background: var(--bull); }
+  .bar.active.bear { background: var(--bear); }
+  .bar.active.neut { background: var(--neutral); }
+  .bar.inactive    { background: var(--border); }
+
+  .time-tag {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 3px 8px;
+  }
+
+  /* ── LOADING SKELETON ── */
+  .skeleton-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .skel {
+    background: linear-gradient(90deg, var(--border) 25%, #1f2d42 50%, var(--border) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 6px;
+  }
+  @keyframes shimmer { to { background-position: -200% 0; } }
+
+  /* ── ERROR STATE ── */
+  .error-box {
+    background: rgba(255,61,87,.08);
+    border: 1px solid rgba(255,61,87,.3);
+    border-radius: 14px;
+    padding: 24px;
+    text-align: center;
+    margin: 20px 0;
+  }
+  .error-box .icon { font-size: 32px; margin-bottom: 10px; }
+  .error-box p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+  /* ── EMPTY STATE ── */
+  .empty-box {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--muted);
+  }
+  .empty-box .icon { font-size: 40px; margin-bottom: 12px; }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--accent);
+    color: #000;
+    font-weight: 700;
+    font-size: 13px;
+    padding: 10px 20px;
+    border-radius: 30px;
+    transition: transform .3s;
+    z-index: 999;
+    white-space: nowrap;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-top">
+    <div class="logo">
+      <div class="logo-icon">📡</div>
+      <div class="logo-text">Forex<span>News</span></div>
+    </div>
+    <button class="btn-update" id="updateBtn" onclick="fetchNews()">
+      <svg id="refreshIcon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="23 4 23 10 17 10"></polyline>
+        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+      </svg>
+      Update
+    </button>
+  </div>
+  <div class="status-bar">
+    <div class="dot" id="statusDot"></div>
+    <span id="statusText">Siap — tekan Update untuk berita terbaru</span>
+  </div>
+</div>
+
+<!-- LEGEND -->
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:var(--bull)"></div> Bullish (naik)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--bear)"></div> Bearish (turun)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--neutral)"></div> Netral/Campuran</div>
+</div>
+
+<!-- FILTER TABS -->
+<div class="filter-row" id="filterRow">
+  <button class="filter-btn active" onclick="setFilter('all', this)">🌍 Semua</button>
+  <button class="filter-btn" onclick="setFilter('USD', this)">🇺🇸 USD</button>
+  <button class="filter-btn" onclick="setFilter('EUR', this)">🇪🇺 EUR</button>
+  <button class="filter-btn" onclick="setFilter('GBP', this)">🇬🇧 GBP</button>
+  <button class="filter-btn" onclick="setFilter('JPY', this)">🇯🇵 JPY</button>
+  <button class="filter-btn" onclick="setFilter('XAU', this)">🥇 GOLD</button>
+  <button class="filter-btn" onclick="setFilter('AUD', this)">🇦🇺 AUD</button>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="section-title" id="sectionTitle">Berita Forex Terkini</div>
+  <div id="newsContainer">
+    <div class="empty-box">
+      <div class="icon">📰</div>
+      <p>Tekan tombol <strong>Update</strong> di atas<br>untuk mengambil berita terbaru</p>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── CONFIG ──────────────────────────────────────────────────
+const API_URL = "https://api.anthropic.com/v1/messages";
+const MODEL   = "claude-sonnet-4-20250514";
+
+// ── STATE ────────────────────────────────────────────────────
+let allNews      = [];
+let activeFilter = 'all';
+let isLoading    = false;
+
+// ── CURRENCY META ────────────────────────────────────────────
+const CCY_META = {
+  USD: { flag: '🇺🇸', name: 'US Dollar',    pairs: ['EUR/USD','GBP/USD','USD/JPY','USD/CHF','AUD/USD','USD/CAD','XAU/USD'] },
+  EUR: { flag: '🇪🇺', name: 'Euro',          pairs: ['EUR/USD','EUR/GBP','EUR/JPY','EUR/CHF','EUR/AUD'] },
+  GBP: { flag: '🇬🇧', name: 'British Pound', pairs: ['GBP/USD','EUR/GBP','GBP/JPY','GBP/CHF'] },
+  JPY: { flag: '🇯🇵', name: 'Japanese Yen',  pairs: ['USD/JPY','EUR/JPY','GBP/JPY','AUD/JPY'] },
+  XAU: { flag: '🥇', name: 'Gold (XAU)',     pairs: ['XAU/USD','XAU/EUR'] },
+  AUD: { flag: '🇦🇺', name: 'Aussie Dollar', pairs: ['AUD/USD','AUD/JPY','EUR/AUD','GBP/AUD'] },
+  CHF: { flag: '🇨🇭', name: 'Swiss Franc',   pairs: ['USD/CHF','EUR/CHF','GBP/CHF'] },
+  CAD: { flag: '🇨🇦', name: 'Canadian Dollar',pairs: ['USD/CAD','EUR/CAD','CAD/JPY'] },
+  NZD: { flag: '🇳🇿', name: 'NZ Dollar',     pairs: ['NZD/USD','AUD/NZD'] },
+  CNY: { flag: '🇨🇳', name: 'Chinese Yuan',  pairs: ['USD/CNH'] },
+};
+
+// ── PROMPT ───────────────────────────────────────────────────
+function buildPrompt(filter) {
+  const focus = filter === 'all'
+    ? 'semua mata uang utama forex (USD, EUR, GBP, JPY, XAU/Gold, AUD, CHF, CAD)'
+    : `${filter} dan pasangan mata uang yang terkait`;
+
+  return `Kamu adalah analis forex profesional. Berikan 6 berita ekonomi/geopolitik TERBARU dan NYATA hari ini (${new Date().toLocaleDateString('id-ID',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}) yang paling berpengaruh ke ${focus}.
+
+PENTING: Berita harus benar-benar terjadi baru-baru ini. Fokus pada: data ekonomi (NFP, CPI, GDP, dll), kebijakan bank sentral, geopolitik, komoditas.
+
+Balas HANYA dengan JSON array berikut (tanpa teks lain, tanpa markdown):
+
+[
+  {
+    "id": "news_1",
+    "currency": "USD",
+    "title": "Judul berita singkat (maks 12 kata)",
+    "source": "Sumber/Lembaga",
+    "time": "Waktu perkiraan (cth: 2 jam lalu)",
+    "simple_explanation": "Penjelasan 2-3 kalimat dengan bahasa sederhana seperti menjelaskan ke orang awam. Jelaskan apa yang terjadi dan kenapa penting.",
+    "currency_impact": "bullish" atau "bearish" atau "neutral" (dampak ke mata uang tersebut),
+    "strength": 1-3 (1=lemah, 2=sedang, 3=kuat),
+    "pairs": [
+      {
+        "pair": "EUR/USD",
+        "direction": "bullish" atau "bearish" atau "neutral",
+        "label": "BEARISH EUR/USD" atau "BULLISH EUR/USD" (sesuai arah),
+        "reason": "Penjelasan singkat kenapa pair ini terpengaruh (1 kalimat)"
+      }
+    ]
+  }
+]
+
+Sertakan 3-5 pairs yang paling relevan per berita. Untuk pairs: jika berita bearish USD, maka EUR/USD BULLISH. Jika bullish USD, maka EUR/USD BEARISH. Logika ini berlaku untuk semua pairs.`;
+}
+
+// ── FETCH NEWS ───────────────────────────────────────────────
+async function fetchNews() {
+  if (isLoading) return;
+  isLoading = true;
+
+  const btn  = document.getElementById('updateBtn');
+  const icon = document.getElementById('refreshIcon');
+  const dot  = document.getElementById('statusDot');
+  const stxt = document.getElementById('statusText');
+
+  btn.disabled = true;
+  btn.classList.add('spinning');
+  dot.className = 'dot loading';
+  stxt.textContent = 'Mengambil berita terbaru...';
+  showSkeleton();
+
+  try {
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: MODEL,
+        max_tokens: 4000,
+        system: "Kamu adalah analis forex dan ekonomi profesional. Selalu balas dalam format JSON valid tanpa markdown atau penjelasan tambahan.",
+        messages: [{
+          role: 'user',
+          content: buildPrompt(activeFilter)
+        }]
+      })
+    });
+
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+    const data = await response.json();
+    let raw = data.content.map(c => c.text || '').join('');
+
+    // Clean JSON
+    raw = raw.replace(/```json|```/g, '').trim();
+    const startIdx = raw.indexOf('[');
+    const endIdx   = raw.lastIndexOf(']');
+    if (startIdx === -1 || endIdx === -1) throw new Error('Format JSON tidak valid');
+    raw = raw.slice(startIdx, endIdx + 1);
+
+    allNews = JSON.parse(raw);
+
+    dot.className = 'dot';
+    stxt.textContent = `Update ${new Date().toLocaleTimeString('id-ID')} — ${allNews.length} berita ditemukan`;
+    renderNews();
+    showToast(`✅ ${allNews.length} berita berhasil diperbarui`);
+
+  } catch (err) {
+    console.error(err);
+    dot.className = 'dot error';
+    stxt.textContent = 'Gagal mengambil berita';
+    showError(err.message);
+    showToast('❌ Gagal memuat berita');
+  } finally {
+    isLoading = false;
+    btn.disabled = false;
+    btn.classList.remove('spinning');
+  }
+}
+
+// ── FILTER ───────────────────────────────────────────────────
+function setFilter(filter, el) {
+  activeFilter = filter;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+
+  const title = document.getElementById('sectionTitle');
+  title.textContent = filter === 'all' ? 'Semua Berita Forex' : `Berita ${filter}`;
+
+  if (allNews.length > 0) renderNews();
+}
+
+// ── RENDER ───────────────────────────────────────────────────
+function renderNews() {
+  const container = document.getElementById('newsContainer');
+  let news = allNews;
+
+  if (activeFilter !== 'all') {
+    news = allNews.filter(n =>
+      n.currency === activeFilter ||
+      (n.pairs && n.pairs.some(p => p.pair.includes(activeFilter)))
+    );
+  }
+
+  if (news.length === 0) {
+    container.innerHTML = `
+      <div class="empty-box">
+        <div class="icon">🔍</div>
+        <p>Tidak ada berita untuk <strong>${activeFilter}</strong> saat ini.<br>Coba filter lain atau tekan Update.</p>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = news.map((item, i) => buildCard(item, i)).join('');
+}
+
+function buildCard(item, idx) {
+  const meta   = CCY_META[item.currency] || { flag: '🌐', name: item.currency };
+  const impact = item.currency_impact || 'neutral';
+  const strength = item.strength || 1;
+
+  // Strength bars
+  const barClass = impact === 'bullish' ? 'bull' : impact === 'bearish' ? 'bear' : 'neut';
+  const bars = [1,2,3].map(n =>
+    `<div class="bar ${n <= strength ? 'active ' + barClass : 'inactive'}" style="height:${n*6+4}px"></div>`
+  ).join('');
+
+  const strengthLabel = strength === 3 ? 'Dampak Kuat' : strength === 2 ? 'Dampak Sedang' : 'Dampak Ringan';
+
+  // Impact label for currency itself
+  const impactEmoji = impact === 'bullish' ? '🟢' : impact === 'bearish' ? '🔴' : '🟡';
+  const impactWord  = impact === 'bullish' ? 'BULLISH' : impact === 'bearish' ? 'BEARISH' : 'NETRAL';
+
+  // Pairs grid
+  const pairsHtml = (item.pairs || []).slice(0,4).map(p => {
+    const dir   = p.direction || 'neutral';
+    const cls   = dir === 'bullish' ? 'bull' : dir === 'bearish' ? 'bear' : 'neut';
+    const arrow = dir === 'bullish' ? '↑' : dir === 'bearish' ? '↓' : '→';
+    const lbl   = p.label || `${dir.toUpperCase()} ${p.pair}`;
+    return `
+    <div class="impact-item ${cls}">
+      <span class="impact-pair">${p.pair}</span>
+      <span class="impact-label">${arrow} ${lbl}</span>
+      <span class="impact-reason">${p.reason || ''}</span>
+    </div>`;
+  }).join('');
+
+  return `
+  <div class="news-card" style="animation-delay:${idx * 0.07}s">
+    <div class="card-header">
+      <div class="currency-badge">
+        <span class="flag">${meta.flag}</span>
+        <span class="ccy">${item.currency}</span>
+      </div>
+      <div class="card-meta">
+        <div class="card-source">📌 ${item.source || 'Sumber Ekonomi'}</div>
+        <div class="card-title">${item.title}</div>
+      </div>
+    </div>
+
+    <div class="card-body">
+      <!-- Penjelasan sederhana -->
+      <div class="simple-explain">
+        💡 ${item.simple_explanation || '-'}
+      </div>
+
+      <!-- Dampak ke mata uang -->
+      <div style="font-size:11px;color:var(--muted);margin-bottom:8px;font-weight:700;letter-spacing:1px">
+        DAMPAK KE PASANGAN MATA UANG
+      </div>
+
+      <!-- Pairs grid -->
+      <div class="impact-grid">${pairsHtml}</div>
+
+      <!-- Footer -->
+      <div class="card-footer">
+        <div class="strength-badge">
+          <div class="strength-bars">${bars}</div>
+          <span>${strengthLabel}</span>
+        </div>
+        <div class="time-tag">🕐 ${item.time || 'Baru saja'}</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── SKELETON ─────────────────────────────────────────────────
+function showSkeleton() {
+  const container = document.getElementById('newsContainer');
+  container.innerHTML = Array(4).fill(`
+    <div class="skeleton-card">
+      <div style="display:flex;gap:12px;margin-bottom:14px">
+        <div class="skel" style="width:56px;height:64px;border-radius:10px;flex-shrink:0"></div>
+        <div style="flex:1">
+          <div class="skel" style="height:10px;width:40%;margin-bottom:8px"></div>
+          <div class="skel" style="height:16px;width:90%;margin-bottom:6px"></div>
+          <div class="skel" style="height:16px;width:70%"></div>
+        </div>
+      </div>
+      <div class="skel" style="height:56px;margin-bottom:12px"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div class="skel" style="height:64px;border-radius:10px"></div>
+        <div class="skel" style="height:64px;border-radius:10px"></div>
+        <div class="skel" style="height:64px;border-radius:10px"></div>
+        <div class="skel" style="height:64px;border-radius:10px"></div>
+      </div>
+    </div>`).join('');
+}
+
+// ── ERROR ─────────────────────────────────────────────────────
+function showError(msg) {
+  const container = document.getElementById('newsContainer');
+  container.innerHTML = `
+    <div class="error-box">
+      <div class="icon">⚠️</div>
+      <p><strong>Gagal mengambil berita</strong><br><br>
+      Pastikan kamu terhubung ke internet dan coba tekan Update lagi.<br><br>
+      <small style="font-family:monospace;font-size:10px;opacity:.5">${msg}</small></p>
+    </div>`;
+}
+
+// ── TOAST ─────────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+</script>
+</body>
+</html>
